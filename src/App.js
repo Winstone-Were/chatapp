@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import './App.css';
 import {initializeApp}from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { collection, addDoc, query, orderBy, limit, serverTimestamp, getFirestore } from "firebase/firestore"; 
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { collection, addDoc, query, orderBy, limit, serverTimestamp, getFirestore, onSnapshot } from "firebase/firestore"; 
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { useCollectionData } from 'react-firebase-hooks/firestore'
+import { Button } from "@mui/material";
+import{PostAdd} from "@mui/icons-material"
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpPJRmnztU0lYrmVIeueftU4zmrb03O2E",
@@ -16,17 +17,21 @@ const firebaseConfig = {
   appId: "1:186620720316:web:826da82efb0e41f2118cb9",
   measurementId: "G-XQ6903Z8N1"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 function App() {
   const [user] = useAuthState(auth);
+  const signOutFunction = ()=>{
+    signOut(auth);
+  }
   return (
     <div className="App">
       <header>
-        <h1> Super Chat 😎</h1>
+        <h1>Visit Gilo</h1>
+        {user ? <p> Signed In As {auth.currentUser.displayName} </p>: <p>Sign In</p> }
+        {user ? <Button variant="contained" onClick={signOutFunction}> SignOut </Button> : <p> Visit Gilo</p>}
       </header>
       <section>
         {user ? <ChatRoom/> : <SignIn/>}
@@ -48,23 +53,25 @@ function SignIn(){
 
 function ChatRoom(){
   const db = getFirestore(app);
-  const MessagesRef = collection(db,"messages");
-  const MsgQuery = query(MessagesRef,orderBy("createdAt"),limit(25));
-  const [messages] = useCollectionData(MsgQuery,{idField:"id"});
+  const MessagesRef = collection(db,"messages-new");
+  
   const [formValue, setFormValue] = useState("");
   const postMsg = async (e) =>{
     e.preventDefault();
-    const {uid,photoURL} = auth.currentUser;
+    const {uid,photoURL,displayName} = auth.currentUser;
     await addDoc(MessagesRef,{
       text:formValue,
       createdAt:serverTimestamp(),
       uid,
-      photoURL
+      photoURL,
+      displayName
     })
+    setFormValue(" ");
   }
+
   return(
     <>
-      {messages && messages.map(msg => <Post key={msg.id} message={msg} />)}
+      <PostsPage/>
       <form onSubmit={postMsg}>
         <input value={formValue} onChange={(e)=> setFormValue(e.target.value)} placeholder="Whats Happening"/>
         <button type="submit" disabled={!formValue}>Post</button>
@@ -74,11 +81,31 @@ function ChatRoom(){
 }
 
 function Post(props){
-  const {text, photoURL} = props.message;
+  const {text, photoURL, uid, displayName} = props.message;
   return(
-    <div className="message">
-      <img src={photoURL} alt="User"/>
-      <p> {text} </p>
+    <div>
+      <div className={`msg ${uid === auth.currentUser.uid ? 'sent': 'received'}`}>
+        <img src={photoURL} alt="User"/>
+        <p> {text} </p>
+    </div>
+    </div>
+  )
+}
+
+function PostsPage(){
+  const db = getFirestore(app);
+  const MessagesRef = collection(db,"messages-new");
+  const MsgQuery = query(MessagesRef,orderBy("createdAt","desc"),limit(15)); 
+  const  [posts, setPost] = useState([]);
+  useEffect(()=>{
+    onSnapshot(MsgQuery,(snapshot)=>{
+      setPost(snapshot.docs.map(doc=> doc.data()));
+    })
+  },[])
+  
+  return(
+    <div className="posts">
+      {posts.map(pst=> <Post key={pst.id} message={pst}/>)}   
     </div>
   )
 }
