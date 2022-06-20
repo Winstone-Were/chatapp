@@ -4,8 +4,8 @@ import {initializeApp}from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { collection, addDoc, query, orderBy, limit, serverTimestamp, getFirestore, onSnapshot } from "firebase/firestore"; 
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { Button } from "@mui/material";
-import{PostAdd} from "@mui/icons-material"
+
+import {Input, PinInput, PinInputField, Button, VStack, Flex} from "@chakra-ui/react"
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpPJRmnztU0lYrmVIeueftU4zmrb03O2E",
@@ -21,6 +21,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
+//Entry Point To Te App
 function App() {
   const [user] = useAuthState(auth);
   const signOutFunction = ()=>{
@@ -31,7 +32,7 @@ function App() {
       <header>
         <h1>Visit Gilo</h1>
         {user ? <p> Signed In As {auth.currentUser.displayName} </p>: <p>Sign In</p> }
-        {user ? <Button variant="contained" onClick={signOutFunction}> SignOut </Button> : <p> Visit Gilo</p>}
+        {user ? <Button  onClick={signOutFunction}> SignOut </Button> : <p> Visit Gilo</p>}
       </header>
       <section>
         {user ? <ChatRoom/> : <SignIn/>}
@@ -47,6 +48,7 @@ function SignIn(){
   return (
     <>
       <button className="sign-in" onClick={SignInWithGoogle}> Sign In With Google </button>
+      <CreateChatRoom/>
     </>
   )
 }
@@ -108,6 +110,42 @@ function PostsPage(){
       {posts.map(pst=> <Post key={pst.id} message={pst}/>)}   
     </div>
   )
+}
+
+function CreateChatRoom(){
+  const [valueName,setNameValue] = useState('');
+  const [valuePin,setPinValue] = useState('');
+  const handleChange = ()=>{
+    console.log(`${valueName} : ${valuePin}`);
+  }
+  return(
+    <VStack>
+      <Input
+        value={valueName}
+        placeholder = "Sample Place Holder"
+        onChange={(e)=> setNameValue(e.target.value)}
+        variant='flushed'
+      />
+      <Flex>
+        <PinInput onChange={(e)=> setPinValue(e)}>
+          <PinInputField/>
+          <PinInputField/>
+          <PinInputField/>
+          <PinInputField/>
+        </PinInput>
+      </Flex>
+      <Button onClick={handleChange}> CREATE CHAT ROOM </Button>
+    </VStack>
+  )
+}
+
+function HomeArea(){
+  
+}
+
+function ChatRooms(){
+  //UseEffect Function That Runs To Get All The Registered Chat Rooms
+  //Returns Buttons To Which When Clicked Allows User To Enter A Chat Room
 }
 
 export default App;
